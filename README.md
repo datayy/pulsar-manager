@@ -27,7 +27,8 @@ is able to talk to the brokers and bookies in your Pulsar cluster.
     docker run -d -it \
         -p 6650:6650 \
         -p 8080:8080 \
-        -v $PWD/data:/pulsar/data \
+        -v pulsardata:/pulsar/data \
+        -v pulsarconf:/pulsar/conf \
         --name pulsar-standalone \
         apachepulsar/pulsar:latest \
         bin/pulsar standalone
@@ -48,7 +49,7 @@ is able to talk to the brokers and bookies in your Pulsar cluster.
         -e USERNAME=pulsar \
         -e PASSWORD=pulsar \
         -e LOG_LEVEL=DEBUG \
-        -v $PWD:/data \
+        -v pulsarui:/data \
         --link pulsar-standalone \
         apachepulsar/pulsar-manager:v0.1.0
     ```
@@ -66,7 +67,8 @@ is able to talk to the brokers and bookies in your Pulsar cluster.
     * `PASSWORD`: the password of PostgreSQL.
 
     * `LOG_LEVEL`: level of log.
-
+    
+    * `pulsarui`: docker volume to store PostgresSQL data.
 
 ### Use Docker Compose
 
@@ -162,7 +164,10 @@ If you are deploying Pulsar Manager 0.1.0 using the released container, you can 
 If you are deploying Pulsar Manager using the latest code, you can create a super-user using the following command. Then you can use the super user credentials to log in the Pulsar Manager UI.
 
     ```$xslt
-    curl 
+    CSRF_TOKEN=$(curl http://backend-service:7750/pulsar-manager/csrf-token)
+    curl \
+        -H 'X-XSRF-TOKEN: $CSRF_TOKEN' \
+        -H 'Cookie: XSRF-TOKEN=$CSRF_TOKEN;' \
         -H "Content-Type: application/json" \
         -X PUT http://backend-service:7750/pulsar-manager/users/superuser \
         -d '{"name": "admin", "password": "apachepulsar", "description": "test", "email": "username@test.org"}'
@@ -208,6 +213,9 @@ Use the default account (`pulsar`) and the default password (`pulsar`) to log in
 ### Configure environment
 
 The puslar-manager supports multiple environment configurations and can manage multiple environments conveniently. 
+
+Here, the service URL represents the service IP address of the broker. If you run Pulsar manager in the standalone mode, it should be set to "http://127.0.0.1:8080".
+You can easily find it in the client.conf file of your pulsar-manager. 
 
 ![pulsar-manager-environments](docs/img/pulsar-manager-environments.gif)
 
@@ -268,4 +276,3 @@ The JDBC URL will look like this:
 jdbc:herddb:zookeeper:localhost:2181/herddb
 
 In order to start and setup an HerdDB database follow the instructions on the [HerdDB documentation](https://github.com/diennea/herddb/wiki).
-
